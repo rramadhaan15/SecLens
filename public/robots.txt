@@ -1,0 +1,3 @@
+# SecLens Robots file
+User-agent: *
+Disallow: /api/

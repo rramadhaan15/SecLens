@@ -1,0 +1,24 @@
+{
+  "@version": "2.14.0",
+  "site": [
+    {
+      "@name": "https://portal.seclens.local",
+      "alerts": [
+        {
+          "alert": "SQL Injection",
+          "riskcode": "3",
+          "desc": "Unsanitized user query string leads to SQL execution.",
+          "solution": "Use prepared statements.",
+          "cweid": "89"
+        },
+        {
+          "alert": "Absence of Anti-CSRF Tokens",
+          "riskcode": "2",
+          "desc": "No CSRF token found in form submission.",
+          "solution": "Add CSRF protection header.",
+          "cweid": "352"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,215 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl", "linux-musl-openssl-3.0.x"]
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Environment {
+  DEVELOPMENT
+  STAGING
+  PRODUCTION
+}
+
+enum AssetType {
+  DOMAIN
+  IP
+  URL
+  APPLICATION
+  CONTAINER
+  SERVER
+}
+
+enum RiskLevel {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum ScannerType {
+  OWASP_ZAP
+  NMAP
+  NIKTO
+  TRIVY
+}
+
+enum ScanStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum Severity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+  INFO
+}
+
+enum VulnStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  ACCEPTED_RISK
+  FALSE_POSITIVE
+}
+
+model User {
+  id                    String                @id @default(uuid())
+  email                 String                @unique
+  passwordHash          String
+  name                  String
+  role                  Role                  @default(USER)
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  projects              Project[]
+  assignedVulns         Vulnerability[]       @relation("AssignedVulnerabilities")
+  remediationActivities RemediationActivity[]
+  auditLogs             AuditLog[]
+  reports               Report[]
+
+  @@map("users")
+}
+
+model Project {
+  id              String          @id @default(uuid())
+  name            String
+  description     String?
+  environment     Environment     @default(PRODUCTION)
+  userId          String
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assets          Asset[]
+  scans           Scan[]
+  vulnerabilities Vulnerability[]
+  reports         Report[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@map("projects")
+}
+
+model Asset {
+  id              String          @id @default(uuid())
+  name            String
+  type            AssetType       @default(URL)
+  target          String
+  environment     Environment     @default(PRODUCTION)
+  riskLevel       RiskLevel       @default(HIGH)
+  projectId       String
+  project         Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  scans           Scan[]
+  vulnerabilities Vulnerability[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([projectId])
+  @@index([riskLevel])
+  @@map("assets")
+}
+
+model Scan {
+  id              String          @id @default(uuid())
+  scannerType     ScannerType
+  status          ScanStatus      @default(COMPLETED)
+  target          String
+  durationMs      Int?
+  rawContent      String?         @db.Text
+  summary         String?
+  projectId       String
+  project         Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assetId         String?
+  asset           Asset?          @relation(fields: [assetId], references: [id], onDelete: SetNull)
+  vulnerabilities Vulnerability[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([projectId])
+  @@index([scannerType])
+  @@index([createdAt])
+  @@map("scans")
+}
+
+model Vulnerability {
+  id                    String                @id @default(uuid())
+  title                 String
+  description           String?               @db.Text
+  severity              Severity              @default(MEDIUM)
+  status                VulnStatus            @default(OPEN)
+  cvssScore             Float?
+  cveId                 String?
+  cweId                 String?
+  owaspCategory         String?
+  evidence              String?               @db.Text
+  remediation           String?               @db.Text
+  scanner               ScannerType
+  projectId             String
+  project               Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assetId               String?
+  asset                 Asset?                @relation(fields: [assetId], references: [id], onDelete: SetNull)
+  scanId                String?
+  scan                  Scan?                 @relation(fields: [scanId], references: [id], onDelete: SetNull)
+  assignedToId          String?
+  assignedTo            User?                 @relation("AssignedVulnerabilities", fields: [assignedToId], references: [id], onDelete: SetNull)
+  remediationActivities RemediationActivity[]
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  @@index([severity])
+  @@index([status])
+  @@index([cveId])
+  @@index([projectId])
+  @@index([scanId])
+  @@index([createdAt])
+  @@map("vulnerabilities")
+}
+
+model RemediationActivity {
+  id              String        @id @default(uuid())
+  vulnerabilityId String
+  vulnerability   Vulnerability @relation(fields: [vulnerabilityId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  previousStatus  VulnStatus
+  newStatus       VulnStatus
+  note            String?       @db.Text
+  createdAt       DateTime      @default(now())
+
+  @@map("remediation_activities")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action     String
+  entityType String
+  entityId   String?
+  details    String?  @db.Text
+  createdAt  DateTime @default(now())
+
+  @@map("audit_logs")
+}
+
+model Report {
+  id            String   @id @default(uuid())
+  title         String
+  summaryJson   String   @db.Text
+  generatedById String
+  generatedBy   User     @relation(fields: [generatedById], references: [id], onDelete: Cascade)
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+
+  @@map("reports")
+}

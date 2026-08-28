@@ -1,0 +1,14 @@
+{
+  "host": "portal.seclens.local",
+  "ip": "127.0.0.1",
+  "port": "443",
+  "vulnerabilities": [
+    {
+      "id": "999957",
+      "OSVDB": "0",
+      "method": "GET",
+      "url": "/",
+      "msg": "The Anti-clickjacking X-Frame-Options header is not present."
+    }
+  ]
+}

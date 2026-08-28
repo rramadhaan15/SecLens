@@ -1,0 +1,20 @@
+{
+  "SchemaVersion": 2,
+  "Target": "alpine:3.18.0",
+  "Results": [
+    {
+      "Target": "alpine:3.18.0 (alpine 3.18.0)",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2023-29491",
+          "PkgName": "ncurses-libs",
+          "InstalledVersion": "6.4_p20230422-r0",
+          "FixedVersion": "6.4_p20230422-r1",
+          "Severity": "CRITICAL",
+          "Title": "ncurses: heap-based buffer overflow",
+          "Description": "Heap overflow in ncurses library allows code execution."
+        }
+      ]
+    }
+  ]
+}
